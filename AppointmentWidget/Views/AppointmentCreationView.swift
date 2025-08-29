@@ -56,14 +56,16 @@ struct AppointmentCreationView: View {
     // MARK: - Computed Properties
     private var filteredServices: [MeetingType] {
         if serviceSearchText.isEmpty {
-            return testMeetingTypes
+            return viewModel.meetingTypes
         } else {
-            return testMeetingTypes.filter { $0.name.lowercased().contains(serviceSearchText.lowercased()) }
+            return viewModel.meetingTypes.filter { $0.name.lowercased().contains(serviceSearchText.lowercased()) }
         }
     }
     
     private var filteredGuests: [Guest] {
-        let allGuests = testGuests + testProvidersAsGuest
+        let allGuests = viewModel.guests.map({
+            Guest(name: $0)
+        })
         if guestSearchText.isEmpty {
             return allGuests
         } else {
@@ -73,9 +75,9 @@ struct AppointmentCreationView: View {
     
     private var filteredProviders: [Provider] {
         if providerSearchText.isEmpty {
-            return testProviders
+            return viewModel.allProviders
         } else {
-            return testProviders.filter { $0.name.lowercased().contains(providerSearchText.lowercased()) }
+            return viewModel.allProviders.filter { $0.name.lowercased().contains(providerSearchText.lowercased()) }
         }
     }
     
@@ -123,21 +125,23 @@ struct AppointmentCreationView: View {
                     
                     // User Info
                     userInfoView
+                    
+                    createButton
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100) // Space for create button
             }
         }
         .background(Color(.systemBackground))
-        .overlay(
-            // Create Button
-            VStack {
-                Spacer()
-                createButton
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-            }
-        )
+//        .overlay(
+//            // Create Button
+//            VStack {
+//                Spacer()
+//                createButton
+//                    .padding(.horizontal, 20)
+//                    .padding(.bottom, 20)
+//            }
+//        )
     }
     
     // MARK: - Header View
@@ -305,6 +309,7 @@ struct AppointmentCreationView: View {
             selectedService = service.name
             showingServiceDropdown = false
             showServiceError = false
+            viewModel.draft.service = [service.name]
         }
     }
     
@@ -422,7 +427,7 @@ struct AppointmentCreationView: View {
                     // Guest list
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(filteredGuests, id: \.id) { guest in
+                            ForEach(filteredGuests, id: \.self) { guest in
                                 guestRowView(guest)
                             }
                             
@@ -507,6 +512,8 @@ struct AppointmentCreationView: View {
                 selectedGuests.insert(guest.name)
             }
             showGuestError = false
+            viewModel.draft.consumer = Array(selectedGuests)
+            /// Need to update flow to add viewModel.provider separetly
         }
     }
     
@@ -597,13 +604,12 @@ struct AppointmentCreationView: View {
         .padding(.vertical, 12)
         .background(Color(.systemGray6))
         .onTapGesture {
-//            if selectedProviders.contains(provider.name) {
-//                selectedProviders.remove(provider.name)
-//            } else {
-//                selectedProviders.insert(provider.name)
-//            }
             providerName = provider.name
             showingProviderDropdown = false
+            viewModel.draft.createdBy = provider.name
+            viewModel.sessionUserId = provider.name
+            viewModel.draft.provider.append(providerName)
+            selectedService = viewModel.validateServiceAvailability(for: selectedService ?? "", for: providerName)
         }
     }
     

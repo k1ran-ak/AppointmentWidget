@@ -102,6 +102,10 @@ final class EventViewModel: ObservableObject {
         providerService.getProviders(for: draft.service.first)
     }
     
+    var allProviders: [Provider] {
+        providerService.getProviders(for: nil)
+    }
+    
     var guests: [String] {
         (draft.provider + draft.consumer).filter({ $0 != sessionUserId })
     }
@@ -148,5 +152,10 @@ final class EventViewModel: ObservableObject {
         if let location = draft.location {
             self.draft.location = location.setVideoType(nil)
         } 
+    }
+    
+    func validateServiceAvailability(for serviceId: String, for providerId: String) -> String? {
+        let availableServicesForProvider = self.providerService.getMeetingTypes(for: providerId)
+        return availableServicesForProvider.contains(where: { $0.name == serviceId }) ? serviceId : nil
     }
 }
